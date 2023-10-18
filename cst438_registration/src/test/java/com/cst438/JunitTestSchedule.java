@@ -1,9 +1,16 @@
 package com.cst438;
 
 import static org.junit.Assert.assertFalse;
+
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
+import java.util.Collections;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +21,10 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import com.cst438.domain.EnrollmentRepository;
 import com.cst438.domain.ScheduleDTO;
+import com.cst438.domain.Student;
+import com.cst438.domain.StudentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /* 
@@ -27,6 +37,83 @@ public class JunitTestSchedule {
 
 	@Autowired
 	private MockMvc mvc;
+
+    StudentRepository studentRepository;
+    EnrollmentRepository enrollmentRepository;
+	@Test
+	public void testUpdateStudent() throws Exception {
+	    // Create a StudentDTO with test data
+	    Student sdto = new Student();
+	    sdto.setEmail("test@example.com");
+	    sdto.setName("Test Student");
+	    sdto.setStudent_id(123);
+	    
+	    MockHttpServletResponse response = mvc.perform(
+	            MockMvcRequestBuilders
+	                    .put("/student/123") 
+	                    .contentType(MediaType.APPLICATION_JSON)
+	                    .content(asJsonString(sdto))
+	    ).andReturn().getResponse();
+
+	    
+	    assertEquals(200, response.getStatus());
+
+	   
+	}
+	@Test
+	public void testCreateStudent() throws Exception {
+	    // Set up the Student for the test
+	    Student student = new Student();
+	    student.setStudent_id(1); 
+	    student.setEmail("test@example.com");
+	    student.setName("Test Student");
+
+	   
+	    // Mock the studentRepository to return null when findByEmail is called
+	    when(studentRepository.findByEmail(any())).thenReturn(null);
+
+	    // Perform the POST request
+	    MockHttpServletResponse response;
+	    response = mvc.perform(
+	    		MockMvcRequestBuilders
+	        .post("/student")
+	            .contentType(MediaType.APPLICATION_JSON)
+	            .content(asJsonString(student))
+	    ).andReturn().getResponse();
+
+	    // Verify that the response status is OK (value 200)
+	    assertEquals(200, response.getStatus());
+
+	   
+	}
+	@Test
+	public void testDeleteStudent() throws Exception {
+	   
+	    int studentId = 1; 
+
+	    // Mock the studentRepository to return a Student with the specified student_id
+	    Student student = new Student();
+	    student.setStudent_id(studentId);
+	    when(studentRepository.findById(eq(studentId))).thenReturn(Optional.of(student));
+
+	    // Mock the enrollmentRepository to return an empty list when findByStudentId is called
+	    when(enrollmentRepository.findByStudentId(eq(studentId))).thenReturn(Collections.emptyList());
+
+	    // Perform the DELETE request
+	    MockHttpServletResponse response;
+	    response = mvc.perform(
+	    		MockMvcRequestBuilders
+	        .delete("/student/{id}", studentId)
+	            .param("force", "true") // Optional parameter to force deletion
+	    ).andReturn().getResponse();
+
+	    // Verify that the response status is OK (value 200) as the student has no enrollments
+	    assertEquals(200, response.getStatus());
+
+	    // Verify any other assertions based on the response content or the state of your application
+	}
+
+
 
 	/*
 	 * add course 40442 to student test@csumb.edu in schedule Fall 2021
